@@ -21,6 +21,10 @@ public class UtopiaConnectionExampleExtended : MonoBehaviour
 	protected UtopiaLib.Client client;
 	protected string endpoint;
     protected string api_host;
+
+	public void Start() {
+		//DontDestroyOnLoad(this);
+	}
 	
     bool connect(string host = "127.0.0.1", string token = "", int port = 20000) {
         //endpoint = protocol + "://" + host + port.ToString() + "/api/" + api_version;
