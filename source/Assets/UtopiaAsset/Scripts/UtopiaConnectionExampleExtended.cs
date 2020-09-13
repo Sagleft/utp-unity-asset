@@ -23,13 +23,46 @@ public class UtopiaConnectionExampleExtended : MonoBehaviour
 	
 	public Text UserNameText;
 	public Text UserMoodText;
+	
+	public Vector3[] camPositions;
+	public Vector3[] camRotations;
+	public float cameraTransformSpeed = 1.0f;
 
 	protected UtopiaLib.Client client;
 	protected string endpoint;
     protected string api_host;
+	
+	protected bool isCamMoving = false;
+	//protected bool isGUISuspended = false;
+	//protected Vector3 camStartPosition;
+	protected Vector3 camDestinationPosition;
+	//protected Quaternion camStartQuaternion;
+	protected Quaternion camDestinationQuaternion;
+	protected float camTransformStartTime = 0.0f;
+	protected float camDestinationRangeParam = 0.1f;
 
 	public void Start() {
 		//DontDestroyOnLoad(this);
+	}
+	
+	public void Update() {
+		//move the camera if this condition is enabled
+		if(isCamMoving) {
+			float transform_param = cameraTransformSpeed * Time.deltaTime;
+			
+			//lerp position
+			Camera.main.transform.position = Vector3.Lerp(Camera.main.transform.position, camDestinationPosition, transform_param);
+			
+			//lerp rotation
+			Camera.main.transform.rotation = Quaternion.Lerp(Camera.main.transform.rotation, camDestinationQuaternion, transform_param);
+			//Debug.Log(transform_param);
+			
+			//Debug.Log(transform_param2);
+			Vector3 distanceVector = camDestinationPosition - Camera.main.transform.position;
+			if (distanceVector.sqrMagnitude < camDestinationRangeParam * camDestinationRangeParam) {
+				isCamMoving = false;
+			}
+		}
 	}
 	
     bool connect(string host = "127.0.0.1", string token = "", int port = 20000) {
@@ -93,5 +126,33 @@ public class UtopiaConnectionExampleExtended : MonoBehaviour
 		Texture2D avatar_texture = new Texture2D(1, 1);
 		avatar_texture.LoadImage( avatar_bytes );
 		return avatar_texture;
+	}
+	
+	public void moveCam(Vector3 dest, Vector3 newRotation) {
+		//initiates smooth camera movement to a new position
+		//camStartPosition   = Camera.main.transform.position;
+		//camStartQuaternion = Camera.main.transform.rotation;
+		
+		camDestinationPosition   = dest;
+		camDestinationQuaternion = Quaternion.Euler(newRotation.x, newRotation.y, newRotation.z);
+		camTransformStartTime = Time.time;
+		isCamMoving = true;
+		//isGUISuspended = true;
+	}
+	
+	void moveCamByPointIndex(int point_index = 0) {
+		moveCam(camPositions[point_index], camRotations[point_index]);
+	}
+	
+	public void guiActionShowContacts() {
+		moveCamByPointIndex(0);
+	}
+	
+	public void guiActionShowChannels() {
+		moveCamByPointIndex(1);
+	}
+	
+	public void guiActionShowWallet() {
+		moveCamByPointIndex(2);
 	}
 }
