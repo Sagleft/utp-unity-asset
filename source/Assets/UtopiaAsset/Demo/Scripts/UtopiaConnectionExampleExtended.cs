@@ -27,6 +27,8 @@ public class UtopiaConnectionExampleExtended : MonoBehaviour
 	public Vector3[] camPositions;
 	public Vector3[] camRotations;
 	public float cameraTransformSpeed = 1.0f;
+	
+	public Transform ContactPrefab;
 
 	protected UtopiaLib.Client client;
 	protected string endpoint;
@@ -145,14 +147,97 @@ public class UtopiaConnectionExampleExtended : MonoBehaviour
 	}
 	
 	public void guiActionShowContacts() {
+		clearPlayground();
 		moveCamByPointIndex(0);
+		loadContacts();
 	}
 	
 	public void guiActionShowChannels() {
+		clearPlayground();
 		moveCamByPointIndex(1);
 	}
 	
 	public void guiActionShowWallet() {
+		clearPlayground();
 		moveCamByPointIndex(2);
+	}
+	
+	Vector2 getHexSkewedPosition( int i, int hx, int hy ) {
+		int[] h = { 1, 1, 0, -1, -1, 0, 1, 1, 0 };
+		if ( i == 0 ) {
+			return Vector2.zero;
+		}
+
+		int layer = (int) Mathf.Round( Mathf.Sqrt( (float)i / 3.0f ) );
+
+		int firstIdxInLayer = 3 * layer * (layer-1) + 1;
+		int side = (int) (i - firstIdxInLayer) / layer;
+		int idx  = (int) (i - firstIdxInLayer) % layer;
+
+		hx = layer*h[side+0] + (idx+1) * h[side+2];
+		hy = layer*h[side+1] + (idx+1) * h[side+3];
+		return new Vector2(hx, hy);
+	}
+
+	Vector2 getHexPosition( int i, float hx, float hy ) {
+		int x = 0;
+		int y = 0;
+		Vector2 vector = getHexSkewedPosition( i, x, y );
+		hx = vector.x - vector.y * 0.5f;
+		hy = vector.y * (float)Math.Sqrt( 0.75D );
+		return new Vector2(hx, hy);
+	}
+	
+	protected string contacts_group_name = "ContactsGroup";
+	
+	void clearPlayground() {
+		//find GameObject contacts group
+		GameObject contacts_group_obj = GameObject.Find(contacts_group_name);
+		if(contacts_group_obj != null) {
+			//objects has been added to the scene
+			Destroy(contacts_group_obj);
+		}
+	}
+	
+	void loadContacts() {
+		GameObject contacts_group_obj = new GameObject(contacts_group_name);
+		
+		JArray contacts_arr = client.getContacts();
+		int i = 0;
+		float prefab_posY = 0.01f;
+		
+		float hx = 0; //reference start position, x
+		float hy = 0; //y
+		
+		//parameters for stretching the mesh
+		float scale_grid_x = 1.25f;
+		float scale_grid_y = 1.45f;
+		
+		Quaternion prefab_rotation = Quaternion.Euler(90, 0, 0);
+		foreach (JObject contact_obj in contacts_arr) {
+			//Debug.Log(contact_obj["nick"].ToString());
+			Vector2 prefab_position = getHexPosition(i, hx, hy);
+			//Debug.Log(prefab_position);
+			hx = prefab_position.x * scale_grid_x;
+			hy = prefab_position.y * scale_grid_y;
+			
+			//adding a prefab to the scene
+			Transform contact_transform = Instantiate(
+				ContactPrefab,
+				new Vector3(hx, prefab_posY, hy),
+				prefab_rotation
+			);
+			contact_transform.gameObject.name = "contact" + i.ToString();
+			
+			//set the parent object
+			contact_transform.SetParent(contacts_group_obj.transform);
+			
+			//add an avatar
+			ContactController controller = contact_transform.gameObject.GetComponent<ContactController>();
+			string contact_pubkey = contact_obj["pk"].ToString();
+			controller.changeAvatar(getAccountAvatar(contact_pubkey));
+			
+			i++;
+		}
 	}
 }
