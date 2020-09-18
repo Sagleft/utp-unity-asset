@@ -10,6 +10,7 @@ using Newtonsoft.Json.Linq;
 public class UtopiaConnectionExampleExtended : MonoBehaviour
 {
 	public string protocol = "http";
+	public bool isDebug = false;
     //public string api_version = "1.0";
 
     public InputField inputHost;
@@ -20,6 +21,8 @@ public class UtopiaConnectionExampleExtended : MonoBehaviour
 	public GameObject PanelConnection;
 	public GameObject PanelPlayground;
 	public RawImage userAvatarImage;
+	public Text BalanceText;
+	public GameObject WalletCanvasObject;
 	
 	public Text UserNameText;
 	public Text UserMoodText;
@@ -42,9 +45,13 @@ public class UtopiaConnectionExampleExtended : MonoBehaviour
 	protected Quaternion camDestinationQuaternion;
 	protected float camTransformStartTime = 0.0f;
 	protected float camDestinationRangeParam = 0.1f;
+	
+	protected float accountBalance = 0.0f;
 
 	public void Start() {
 		//DontDestroyOnLoad(this);
+		//find UI object with wallet canvas
+		//WalletCanvasObject = GameObject.Find("WalletCanvas");
 	}
 	
 	public void Update() {
@@ -92,8 +99,11 @@ public class UtopiaConnectionExampleExtended : MonoBehaviour
 		} catch (Exception ex) {
 			response = "Exception: " + ex.Message;
 		}
+		
 		responseTextObj.text = response;
-		Debug.Log(response);
+		if(isDebug) {
+			Debug.Log(response);
+		}
 		
 		PanelConnection.SetActive(!is_connected);
 		PanelPlayground.SetActive(is_connected);
@@ -110,6 +120,11 @@ public class UtopiaConnectionExampleExtended : MonoBehaviour
 		return account_data ["pk"].ToString ();
 	}
 	
+	void updateAccountBalance() {
+		//TODO: checkClientConnection
+		accountBalance = (float) client.getBalance();
+	}
+	
 	public void loadAccountData() {
 		//get client pubkey
 		string user_pubkey = getClientPubkey();
@@ -120,6 +135,8 @@ public class UtopiaConnectionExampleExtended : MonoBehaviour
 		
 		UserNameText.text = contact_data ["nick"].ToString ();
 		UserMoodText.text = contact_data ["moodMessage"].ToString ();
+		//get balance
+		updateAccountBalance();
 	}
 	
 	public Texture2D getAccountAvatar(string account_pubkey) {
@@ -156,12 +173,19 @@ public class UtopiaConnectionExampleExtended : MonoBehaviour
 		clearPlayground();
 		moveCamByPointIndex(1);
 	}
-	
+
 	public void guiActionShowWallet() {
 		clearPlayground();
+		WalletCanvasObject.SetActive(true);
 		moveCamByPointIndex(2);
+		loadWalletData();
 	}
-	
+
+	void loadWalletData() {
+		updateAccountBalance();
+		BalanceText.text = "Balance: " + accountBalance.ToString() + " CRP";
+	}
+
 	Vector2 getHexSkewedPosition( int i, int hx, int hy ) {
 		int[] h = { 1, 1, 0, -1, -1, 0, 1, 1, 0 };
 		if ( i == 0 ) {
@@ -197,6 +221,7 @@ public class UtopiaConnectionExampleExtended : MonoBehaviour
 			//objects has been added to the scene
 			Destroy(contacts_group_obj);
 		}
+		WalletCanvasObject.SetActive(false);
 	}
 	
 	void loadContacts() {
