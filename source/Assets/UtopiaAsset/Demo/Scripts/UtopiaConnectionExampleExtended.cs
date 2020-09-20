@@ -45,6 +45,8 @@ public class UtopiaConnectionExampleExtended : MonoBehaviour
 	protected Quaternion camDestinationQuaternion;
 	protected float camTransformStartTime = 0.0f;
 	protected float camDestinationRangeParam = 0.1f;
+	protected HexGridBuilder HexGBuilder;
+	protected ChannelsViewBuilder ChannelsBuilder;
 	
 	protected float accountBalance = 0.0f;
 
@@ -52,6 +54,8 @@ public class UtopiaConnectionExampleExtended : MonoBehaviour
 		//DontDestroyOnLoad(this);
 		//find UI object with wallet canvas
 		//WalletCanvasObject = GameObject.Find("WalletCanvas");
+		ChannelsBuilder = this.GetComponent<ChannelsViewBuilder>();
+		HexGBuilder     = this.GetComponent<HexGridBuilder>();
 	}
 	
 	public void Update() {
@@ -146,7 +150,15 @@ public class UtopiaConnectionExampleExtended : MonoBehaviour
 		avatar_texture.LoadImage( avatar_bytes );
 		return avatar_texture;
 	}
-	
+
+	public Texture2D getChannelAvatar(string channelID) {
+		string image_base64 = client.getChannelAvatar (channelID);
+		byte[] image_bytes = System.Convert.FromBase64String(image_base64);
+		Texture2D texture = new Texture2D(1, 1);
+		texture.LoadImage( image_bytes );
+		return texture;
+	}
+
 	public void moveCam(Vector3 dest, Vector3 newRotation) {
 		//initiates smooth camera movement to a new position
 		//camStartPosition   = Camera.main.transform.position;
@@ -169,9 +181,29 @@ public class UtopiaConnectionExampleExtended : MonoBehaviour
 		loadContacts();
 	}
 	
+	void loadChannelsData() {
+		//Type: 0-All, 1-Recent, 2-My, 3-Friends, 4-Bookmarked, 5-Joined, 6-Opened
+		string channel_type = "0"; //joined channels
+		string search_filter = "";
+		UtopiaLib.QueryFilter filter = new UtopiaLib.QueryFilter();
+		//limit channels number in response
+		filter.limit = "33";
+		
+		JArray channelsData = client.getChannels(
+			channel_type,
+			search_filter,
+			filter
+		);
+		ChannelsBuilder.buildChannels(channelsData);
+		if(isDebug) {
+			Debug.Log(channelsData);
+		}
+	}
+
 	public void guiActionShowChannels() {
 		clearPlayground();
 		moveCamByPointIndex(1);
+		loadChannelsData();
 	}
 
 	public void guiActionShowWallet() {
@@ -185,34 +217,9 @@ public class UtopiaConnectionExampleExtended : MonoBehaviour
 		updateAccountBalance();
 		BalanceText.text = "Balance: " + accountBalance.ToString() + " CRP";
 	}
-
-	Vector2 getHexSkewedPosition( int i, int hx, int hy ) {
-		int[] h = { 1, 1, 0, -1, -1, 0, 1, 1, 0 };
-		if ( i == 0 ) {
-			return Vector2.zero;
-		}
-
-		int layer = (int) Mathf.Round( Mathf.Sqrt( (float)i / 3.0f ) );
-
-		int firstIdxInLayer = 3 * layer * (layer-1) + 1;
-		int side = (int) (i - firstIdxInLayer) / layer;
-		int idx  = (int) (i - firstIdxInLayer) % layer;
-
-		hx = layer*h[side+0] + (idx+1) * h[side+2];
-		hy = layer*h[side+1] + (idx+1) * h[side+3];
-		return new Vector2(hx, hy);
-	}
-
-	Vector2 getHexPosition( int i, float hx, float hy ) {
-		int x = 0;
-		int y = 0;
-		Vector2 vector = getHexSkewedPosition( i, x, y );
-		hx = vector.x - vector.y * 0.5f;
-		hy = vector.y * (float)Math.Sqrt( 0.75D );
-		return new Vector2(hx, hy);
-	}
 	
 	protected string contacts_group_name = "ContactsGroup";
+	
 	
 	void clearPlayground() {
 		//find GameObject contacts group
@@ -221,6 +228,7 @@ public class UtopiaConnectionExampleExtended : MonoBehaviour
 			//objects has been added to the scene
 			Destroy(contacts_group_obj);
 		}
+		ChannelsBuilder.clearChannels();
 		WalletCanvasObject.SetActive(false);
 	}
 	
@@ -241,7 +249,7 @@ public class UtopiaConnectionExampleExtended : MonoBehaviour
 		Quaternion prefab_rotation = Quaternion.Euler(90, 0, 0);
 		foreach (JObject contact_obj in contacts_arr) {
 			//Debug.Log(contact_obj["nick"].ToString());
-			Vector2 prefab_position = getHexPosition(i, hx, hy);
+			Vector2 prefab_position = HexGBuilder.getHexPosition(i, hx, hy);
 			//Debug.Log(prefab_position);
 			hx = prefab_position.x * scale_grid_x;
 			hy = prefab_position.y * scale_grid_y;
