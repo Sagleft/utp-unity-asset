@@ -1,9 +1,8 @@
 # utp-unity-asset
 
-TODO: 
-1. finish demo scenes;
-2. make screenshots;
-3. draw up documentation;
-4. send to the asset store;
+Asset that allows you to create your own clients for the Utopia Ecosystem, as well as create your own applications and games using the Utopia API.
 
-Unity version: 2018.4.23f1
+* Unity version used: 2018.4.23f1
+* tested with Utopia version: 1.0.5986
+
+![asset logo](https://github.com/Sagleft/utp-unity-asset/raw/master/images/key_big.png)
