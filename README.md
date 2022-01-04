@@ -6,3 +6,9 @@ Asset that allows you to create your own clients for the Utopia Ecosystem, as we
 * tested with Utopia version: 1.0.5986
 
 ![asset logo](https://github.com/Sagleft/utp-unity-asset/raw/master/images/key_big.png)
+
+---
+
+![image](https://github.com/Sagleft/Sagleft/raw/master/image.png)
+
+### :globe_with_meridians: [Telegram канал](https://t.me/+VIvd8j6xvm9iMzhi)
